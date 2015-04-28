@@ -3,3 +3,5 @@ MAINTAINER "Jonathan Owen" jonathanro@gmail.com
 
 RUN cd /opt/caffe && \
   (easy_install rodeo)
+
+RUN rodeo .
