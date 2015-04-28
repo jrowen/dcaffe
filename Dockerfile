@@ -8,3 +8,5 @@ RUN mkdir /home/caffe && \
   chmod 777 /home/caffe && \
   cd /home/caffe && \
   rodeo . --host=0.0.0.0 --port=5000 --no-browser
+  
+EXPOSE 5000
