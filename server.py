@@ -5,6 +5,12 @@ import cherrypy
 
 if __name__ == '__main__':
 
+    # load ipython kernel
+    global kernel
+    global active_dir
+    active_dir = os.path.realpath(directory)
+    kernel = Kernel(active_dir)
+
     # Mount the application
     cherrypy.tree.graft(app, "/")
 
