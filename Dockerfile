@@ -1,16 +1,13 @@
 FROM tleyden5iwx/caffe-cpu-master
 MAINTAINER "Jonathan Owen" jonathanro@gmail.com
 
-RUN cd /opt/caffe && \
-  (easy_install rodeo && \
-   easy_install cherrypy)
+COPY /rodeo /opt/rodeo
+#RUN chmod -R 755 /opt/rodeo
 
-RUN mkdir /opt/rodeo
-ADD server.py /opt/rodeo/server.py
-RUN chmod 777 /opt/rodeo/server.py
+RUN pip install -r /opt/rodeo/requirements.txt
 
-RUN mkdir /home/caffe && \
-  chmod 777 /home/caffe
+RUN mkdir -p /home/caffe \
+    && chmod -R 777 /home/caffe
 
 EXPOSE 5000
 
