@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Rodeo</title>
+    <style type="text/css" media="screen">
+        .editor {
+            height: 325px;
+        }
+        .history {
+          padding: 0px;
+          margin: 0px;
+          overflow: auto;
+        }
+
+        .top-right {
+          height: 200px;
+        }
+
+        .small-container > .row {
+          margin-right: 0px;
+          margin-left: 0px;
+        }
+        .hat {
+          position: absolute;
+          left: -5px;
+          top: 8px;
+          width: 50px;
+          height: auto;
+        }
+    </style>
+    <link href="{{ url_for('static', filename='css/bootstrap.yeti.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/console.css') }}" rel="stylesheet">
+    <style type="text/css" media="screen">
+      
+    </style>
+</head>
+<body>
+
+  <!-- start nav -->
+  <nav class="navbar navbar-inverse">
+    <div class="container-fluid">
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a href="https://www.yhathq.com/">
+          <img class="hat" src="{{ url_for('static', filename='img/cowboy-hat.svg') }}" title="Yee Haw!" href="https://www.yhathq.com/">
+          <a class="navbar-brand" href="https://www.yhathq.com/"><span style="color: #ee5311;">&ycirc;</span><span class="color: #898989">hat</span></a>
+        </a>
+      </div>
+      <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-2">
+        <ul class="nav navbar-nav">
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Rodeo</a>
+            <ul class="dropdown-menu" role="menu">
+              <li><a href="/about">About</a></li>
+              <li><a href="#" data-toggle="modal" data-target="#prefsModal">Preferences</a></li>
+              <li class="divider"></li>
+              <li><a href="#">Quit</a></li>
+            </ul>
+          </li>
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">File</a>
+            <ul class="dropdown-menu" role="menu">
+              <li><a onclick="addTab();" href="#">New Script</a></li>
+              <li><a id="openfilewidget" href="#">Open File</a></li>
+              <!-- <li><a id="data-upload" href="#">Upload Data</a></li> -->
+              <li><a onclick='saveEditor($("#editors .active .editor").attr("id"));' href="#">Save</a></li>
+              <li><a onclick='saveEditor($("#editors .active .editor").attr("id"), true);' href="#">Save As</a></li>
+              <li class="divider"></li>
+              <li><a onclick='$("#editorsTab .active .closeTab").click();' href="#">Close</a></li>
+              <li><a onclick='$("#editorsTab .closeTab").click();' href="#">Close All</a></li>
+            </ul>
+          </li>
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Help</a>
+            <ul class="dropdown-menu" role="menu">
+              <li><a href="https://github.com/yhat/rodeo" target=_blank >Docs</a></li>
+              <li><a href="#" data-toggle="modal" data-target="#myModal">Shortcuts</a></li>
+            </ul>
+          </li>
+        </ul>
+        <ul class="nav navbar-nav navbar-right">
+          <li><a>Rodeo {{ version }}</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+  <!-- end nav -->
+  <div class="small-container">
+  <div class="row">
+    <!-- scripts -->
+
+
+    <div class="col-sm-7 resizable" style="border-right: 1px solid #dddddd;">
+      <!-- tab headers -->
+      <ul id="editorsTab" class="nav nav-tabs">
+        <button id="run-btn" title="Run script" class="close" type="button" style="color: steelblue; padding-right; 8px;">
+            <span class="glyphicon glyphicon-play-circle" aria-hidden="true"></span>
+        </button>
+        <button id="reset-btn" title="Reset environment" class="close" type="button" style="color: red; padding-right: 8px;">
+            <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span>
+        </button>
+        <button id="knit-btn" title="Knit Markdown" class="close" type="button" style="color: coral; padding-right: 8px;">
+            <span class="glyphicon glyphicon-paperclip" aria-hidden="true"></span>
+        </button>
+        <li class="active">
+          <a class="editor1-tab" href="#tab1" data-toggle="tab" aria-expanded="false"><span class="name">Untitled.py</span>&nbsp;
+            <button class="close closeTab" type="button" style="color: red;"><span class="glyphicon glyphicon-remove" aria-hidden="true"></span></button>
+          </a>
+        </li>
+        <li><a href="#" id="add-tab"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span></a></li>
+      </ul>
+      <!-- end tab headers -->
+
+      <div id="editors" class="tab-content">
+        <div class="tab-pane active" id="tab1">
+          <div class="editor" id="editor1"></div>
+        </div>
+      </div>
+
+      <hr>
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h3 class="panel-title"><span class="glyphicon glyphicon-console" aria-hidden="true"></span></h3>
+        </div>
+        <div class="panel-body">
+          <div id="console"></div>
+        </div>
+      </div>
+    </div>
+  <!-- end scripts -->
+
+  <!-- this is the hidden file input for the `File > Open File` menu item -->
+  <input type="file" id="upload_file" class="hide"> 
+  <form id="upload_form" class="hide" action="/upload" method="POST" enctype="multipart/form-data">
+    <input type="file" name="data" id="upload_data" class="hide">
+  </form>
+
+  <div class="col-sm-5 resizable">
+    <ul class="nav nav-tabs">
+      <li class="active"><a href="#environment" data-toggle="tab">Data Frames</a></li>
+      <li><a href="#history" data-toggle="tab">History</a></li>
+    </ul>
+    <div id="myTabContent" class="tab-content">
+      <div class="tab-pane active in top-right" id="environment" style="overflow: auto;">
+        <table class="table table-bordered">
+          <thead>
+            <tr>
+              <th>variable</th>
+              <th>type</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="vars">
+          </tbody>
+        </table>
+      </div>
+      <div class="tab-pane" id="history">
+        <pre style="font-size: 10px; background-color: #fdfdfd;" class="top-right history" id="history-trail"></pre>
+      </div>
+    </div>
+    <hr>
+    <!-- bottom right section -->
+    <ul class="nav nav-tabs">
+      <li class="active"><a href="#files" data-toggle="tab">Files</a></li>
+      <li><a href="#plots" data-toggle="tab">Plots</a></li>
+      <li><a href="#packages" data-toggle="tab">Packages</a></li>
+      <li><a href="#help" data-toggle="tab">Help</a></li>
+    </ul>
+    <div id="myTabContent" class="tab-content">
+      <div class="tab-pane active in" id="files">
+        <div id="file-list" class="list-group">
+          {% for f in files %}
+            <a id="file-{{ f }}" href="#" class="list-group-item openfile">{{ f }}</a>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="tab-pane" id="plots" style="height: 380px;">
+        <a id="prev-plot" class="label label-primary" title="Prevous Plot"><span class="glyphicon glyphicon-circle-arrow-left" aria-hidden="true"></span></a>
+        <a id="next-plot" class="label label-primary" title="Next Plot"><span class="glyphicon glyphicon-circle-arrow-right" aria-hidden="true"></span></a>
+        <a id="zoom-plot" onclick="zoomImage();" class="label label-default" title="Zoom In"><span class="glyphicon glyphicon-zoom-in" aria-hidden="true"></span></a>
+        <a id="export-plot" href="" class="label label-default" title="Export Plot" download><span class="glyphicon glyphicon-picture" aria-hidden="true"></span></a>
+        <a id="trash-plot" class="label label-default" title="Delete Plot"><span class="glyphicon glyphicon-trash" aria-hidden="true"></span></a>
+        <br>
+        <img id="current-plot" style="max-width: 100%; max-height: 380px;" />
+      </div>
+      <div class="tab-pane" id="packages" style="max-height: 380px; overflow: auto;">
+        <table class="table table-striped table-hover">
+          <thead>
+            <tr>
+              <th>package</th>
+              <th>version</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for pkg in packages %}
+              <tr>
+                <td>{{ pkg.key }}</td>
+                <td>{{ pkg.version }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="tab-pane" id="help">
+        <pre style="font-size: 10px; background-color: #fdfdfd; height: 380px; overflow: auto;" id="help-content"><i>run help(...) for more info</i></pre>
+      </div>
+    </div>
+    <!-- end bottom right section -->
+  </div>
+  </div>
+</div>
+
+<!-- modals -->
+{% include 'partials/df.html' %}
+{% include 'partials/shortcuts.html' %}
+{% include 'partials/preferences.html' %}
+
+<script src="{{ url_for('static', filename='js/lib/jquery.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/lib/bootstrap.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/lib/jqconsole.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/lib/ascii-table.min.js') }}"></script>
+<script src="{{ url_for('static', filename='ace/ace.js') }}"></script>
+<script src="{{ url_for('static', filename='ace/ext-language_tools.js') }}"></script>
+<script type="text/javascript">
+
+  var terminal;
+  var plots = [];
+
+  var windowHeight = $(document).height();
+
+  $("#keyBindings").change(function() {
+    var newBinding = $(this).val();
+    setKeyBindings(newBinding);
+  });
+
+  function setKeyBindings(binding) {
+    $(".editor").each(function(i, item) {
+      var editor = ace.edit(item.id);
+      if (binding=="default") {
+        binding = null;
+      }
+      editor.setKeyboardHandler(binding);
+    });
+  }
+  
+  $("#editorTheme").change(function() {
+    var newTheme= $(this).val();
+    setTheme(newTheme);
+  });
+
+  function setTheme(theme) {
+    $(".editor").each(function(i, item) {
+      var editor = ace.edit(item.id);
+      editor.setTheme(theme);
+    });
+  }
+
+  $("#fontSize").change(function() {
+    $(".editor").each(function(i, item) {
+      var editor = ace.edit(item.id);
+      var fontSize = parseFloat($("#fontSize").val());
+      editor.setFontSize(fontSize);
+    });
+    $(".jqconsole").css("font-size", $(this).val() + "px");
+  });
+  
+  function getLastWord(editor) {
+    var pos = editor.getCursorPosition();
+    var column = pos.column - 1;
+    var wordRange = editor.session.getAWordRange(pos.row, column);
+    var text = editor.session.getTextRange(wordRange);
+
+    var newPos = { row: wordRange.start.row, column: wordRange.start.column-1 };
+    if (editor.session.getTextRange({start: newPos, end: wordRange.start })==".") {
+      var variable = editor.session.getTextRange(editor.session.getAWordRange(newPos.row, newPos.column));
+      text = variable + "." + text;
+    }
+    return text;
+  }
+
+  function createEditor(id) {
+    var langTools = ace.require("ace/ext/language_tools");
+    var Autocomplete = ace.require("ace/autocomplete").Autocomplete;
+    var editor = ace.edit(id);
+    editor.completer = new Autocomplete(editor);
+    $.get("/rc", function(d) {
+      setKeyBindings(d.rc.keyBindings || null);
+      if (d.rc.keyBindings) {
+        $("#keyBindings").val(d.rc.keyBindings);
+      }
+
+      setTheme(d.rc.editorTheme || "ace/theme/chrome");
+      if (d.rc.editorTheme) {
+        $("#editorTheme").val(d.rc.editorTheme);
+      }
+
+      editor.setFontSize(parseFloat(d.rc.fontSize || "10"));
+      $(".jqconsole").css("font-size", (d.rc.fontSize || "10") + "px");
+      if (d.rc.fontSize) {
+        $("#fontSize").val(d.rc.fontSize);
+      }
+    });
+    editor.setOptions({
+      showPrintMargin: false,
+      enableBasicAutocompletion: true,
+      enableSnippets: true,
+      enableLiveAutocompletion: false
+    });
+    var pythonCompleter = {
+      getCompletions: function(editor, session, pos, prefix, fn) {
+        var code;
+        if (prefix.length==0) {
+          code = getLastWord(editor) + ".";
+        } else {
+          code = getLastWord(editor);
+        }
+        $.post("/", { code: code, complete: true }, function(d) {
+          d.output = JSON.parse(d.output);
+          var predictions = d.output.map(function(p) {
+            return { name: p.text, value: p.text, score: 100, meta:  p.dtype };
+          });
+          fn(null, predictions)
+        });
+      }
+    };
+    langTools.addCompleter(pythonCompleter);
+    editor.getSession().setMode("ace/mode/python");
+
+    editor.commands.addCommand({
+      name: "sendCommand",
+      bindKey: {win: "ctrl-Enter", mac: "Command-Enter"},
+      exec: function(editor) {
+        var text = editor.getCopyText();
+        if (text=="") {
+          var currline = editor.getSelectionRange().start.row;
+          text = editor.session.getLine(currline);
+        }
+        jqconsole.Write(">>> " + text + '\n', 'jqconsole-input');
+        sendCommand(text);
+        editor.scrollToLine(currline + 1, true, true, function () {});
+        editor.gotoLine(currline + 2, 10, true);
+      }
+    });
+
+    editor.commands.addCommand({
+      name: "saveFile",
+      bindKey: {win: "ctrl-s", mac: "Command-s"},
+      exec: function(editor) {
+        var filename = $("." + id + "-tab .name").text();
+        if (/Untitled/.test(filename)) {
+          filename = prompt("Save as: ");
+          $("." + id + "-tab .name").text(filename);
+          $("#file-list").append('<a id="file-' + filename + '" href="#" class="list-group-item openfile">' + filename + '</a>');
+        }
+        $.post("/file", { source: editor.getSession().getValue(), filename: filename }, function(d) {
+          $("." + id + "-tab").append('<span style="color: coral;" class="saved glyphicon glyphicon-floppy-saved" aria-hidden="true"></span>');
+          setTimeout(function() {
+            $(".saved").remove();
+          }, 500);
+        });
+      }
+    });
+
+    editor.commands.addCommand({
+      name: "autocomplete",
+      bindKey: {win: "tab", mac: "tab"},
+      exec: function(editor) {
+        var pos = editor.getCursorPosition();
+        var text = editor.session.getTextRange({
+          start: { row: pos.row, column: pos.column - 1 },
+          end: { row: pos.row, column: pos.column }
+        });
+        if (text!=" " && text!="") {
+          editor.completer.showPopup(editor)
+        } else {
+          editor.insert("    ");
+        }
+      }
+    });
+    return editor;
+  }
+
+  createEditor("editor1");
+
+
+  function addTab(filename) {
+    var n = $(".editor").length+1;
+    filename = filename || "Untitled-" + n + ".py"
+    var newTabHeader = '<li class=""><a class="editor' + n + '-tab" href="#tab' + n + '" data-toggle="tab" aria-expanded="true"><span class="name">' + filename + '</span> &nbsp;<button class="close closeTab" type="button" style="color: red;"><span class="glyphicon glyphicon-remove" aria-hidden="true"></span></button></a></li>';
+    var newTabEditor = '<div class="tab-pane" id="tab' + n + '"><div class="editor" id="editor' + n + '"></div></div>';
+    $(newTabHeader).insertBefore($("#add-tab").parent());
+    $("#editors").append(newTabEditor);
+    var e = createEditor("editor" + n);
+    registerCloseEvent();
+    $('a[href="#tab' + n + '"]').tab("show");
+    return e;
+  }
+
+  function showDataFrame(varname) {
+    var cmd = "print(" + varname + ".ix[:5000].to_html())"
+    $("#data-table-title").text(varname);
+    $("#data-table").children().remove();
+    $("#data-table").append("<p>fetching data...</p>");
+    $("#dfModal").modal('show');
+    $.post("/", { code: cmd }, function(d) {
+      $("#data-table").children().remove();
+      $("#data-table").append(d.output);
+      $("#data-table table").addClass("table");
+      $("#data-table table").addClass("table-striped");
+    });
+  }
+
+  $("#add-tab").click(function(e) {
+    e.preventDefault();
+    addTab();
+    return false;
+  });
+
+  var jqconsole = $('#console').jqconsole('Welcome to IPython!\n', '>>> ');
+
+  // 4 spaces for python
+  jqconsole.SetIndentWidth(4);
+
+  // ctrl + l to clear
+  jqconsole.RegisterShortcut('l', function() {
+    jqconsole.Clear();
+  });
+
+  // ctrl + a to skip to beginning of line
+  jqconsole.RegisterShortcut('a', function() {
+    jqconsole.MoveToStart();
+  });
+
+  // ctrl + e to skip to end of line
+  jqconsole.RegisterShortcut('e', function() {
+    jqconsole.MoveToEnd();
+  });
+  
+  // ctrl + c to cancel input
+  jqconsole.RegisterShortcut('c', function() {
+    jqconsole.ClearPromptText();
+  });
+  
+  // ctrl + u to clear to beginning
+  jqconsole.RegisterShortcut('u', function() {
+    var idx = jqconsole.GetColumn() - 4;
+    var text = jqconsole.GetPromptText();
+    jqconsole.SetPromptText(text.slice(0, idx));
+  });
+  
+  // ctrl + w to clear to beginning
+  jqconsole.RegisterShortcut('z', function() {
+    var idx = jqconsole.GetColumn() - 4;
+    var text = jqconsole.GetPromptText();
+    jqconsole.SetPromptText(text.slice(0, idx));
+  });
+  
+  // ctrl + k to clear to beginning
+  jqconsole.RegisterShortcut('k', function() {
+    var idx = jqconsole.GetColumn() - 4;
+    var text = jqconsole.GetPromptText();
+    jqconsole.SetPromptText(text.slice(idx));
+  });
+
+  // ctrl + w to clear one word backwards 
+  jqconsole.RegisterShortcut('w', function() {
+    var idx = jqconsole.GetColumn() - 4;
+    var text = jqconsole.GetPromptText().trim();
+    var lidx = text.slice(0, idx).lastIndexOf(" ");
+    if (lidx==-1) {
+        lidx = 0;
+    }
+    text = text.slice(0, lidx) + " " + text.slice(idx+1);
+    text = text.trim();
+    jqconsole.SetPromptText(text);
+  });
+
+  jqconsole._IndentOld = jqconsole._Indent;
+  jqconsole._Indent = function() {
+    if (jqconsole.GetPromptText().trim()=="") {
+      jqconsole._IndentOld();
+    } else {
+      var originalPrompt= jqconsole.GetPromptText();
+      var code = jqconsole.GetPromptText().split(' ').slice(-1)[0];
+      jqconsole.ClearPromptText(true);
+      $.post("/", { code: code, complete: true }, function(d) {
+        var predictions = JSON.parse(d.output);
+        var table = new AsciiTable();
+        var row = []
+        for(var i=0; i < predictions.length; i++) {
+          var text;
+          if (code.slice(-1)==".") {
+            text = code + predictions[i].text;
+          } else {
+            text = predictions[i].text;
+          }
+          row.push(text);
+          if (row.length==4) {
+            table.addRow(row);
+            row = [];
+          }
+        }
+        if (row.length > 0) {
+          table.addRow(row);
+        }
+        table.removeBorder();
+        jqconsole.Write(table.render() + '\n\n', 'jqconsole-output');
+        startPrompt();
+        jqconsole.SetPromptText(originalPrompt);
+      });
+    }
+  };
+
+  // jqconsole._MoveLeft()
+  // jqconsole._MoveRight()
+
+
+  String.prototype.padRight = function(l,c) {
+    return this+Array(l-this.length+1).join(c||" ");
+  }
+  // ctrl + <space> to make new line bridge
+  jqconsole.RegisterShortcut('32', function() {
+    // autocomplete
+    var code = jqconsole.GetPromptText().split(' ').slice(-1)[0];
+    $.post("/", { code: code, complete: true }, function(d) {
+      var predictions = JSON.parse(d.output);
+      var table = new AsciiTable();
+      var row = []
+      for(var i=0; i < predictions.length; i++) {
+        var text;
+        if (code.slice(-1)==".") {
+          text = code + predictions[i].text;
+        } else {
+          text = predictions[i].text;
+        }
+        row.push(text);
+        if (row.length==4) {
+          table.addRow(row);
+          row = [];
+        }
+      }
+      if (row.length > 0) {
+        table.addRow(row);
+      }
+      table.removeBorder();
+      jqconsole.Write(table.render() + '\n\n', 'jqconsole-output');
+    });
+  });
+  
+  
+  // ctrl + <n> to make new line bridge
+  jqconsole.RegisterShortcut('n', function() {
+    jqconsole.SetPromptText(jqconsole.GetPromptText() + " + \\\n    ");
+  });
+  
+  // ctrl + <enter> to make new line 
+  jqconsole.RegisterShortcut('13', function() {
+    jqconsole.SetPromptText(jqconsole.GetPromptText() + "\n    ");
+  });
+
+  // TODO
+  // ctrl + <left arrow> to jump word
+  // jqconsole.RegisterShortcut('37', function() {
+  // });
+
+  // TODO
+  // ctrl + <right arrow> to jump word
+  // jqconsole.RegisterShortcut('39', function() {
+  // });
+
+  function getSessionVariables(fn) {
+    $.post("/", { code: "getvars" }, function(d) {
+      var vars = JSON.parse(d.output);
+      $("#vars").children().remove();
+      for(var i=0; i < vars.length; i++) {
+        var html;
+        if (vars[i].dtype=="DataFrame") {
+          html = "<tr><td>" +vars[i].name + "</td><td>" + vars[i].dtype + "</td><td style='td-align: center;'><a onclick=\"showDataFrame('" + vars[i].name + "');\">view <span class='glyphicon glyphicon-th' aria-hidden='true'></span></a></td></tr>";
+          $("#vars").append(html);
+        } else {
+           html = "<tr><td>" +vars[i].name + "</td><td>" + vars[i].dtype + "</td><td></td></tr>";
+        }
+      }
+      if (fn!=null) {
+        fn();
+      }
+    });
+  }
+  // start w/ env vars setup
+  getSessionVariables();
+
+  function sendCommand(cmd) {
+    $("#history-trail").append(cmd + "\n");
+
+    if (cmd.slice(0, 1)=="?") {
+      cmd = "help(" + cmd.slice(1) + ")";
+    }
+
+    $.post("/", { code: cmd }, function(d) {
+      // only show help to the Help tab
+      if (/help[(].+[)]/.test(cmd)) {
+        $('a[href="#' + "help" + '"]').tab("show");
+        $("#help-content").text(d.output || "");
+      } else {
+        jqconsole.Write((d.output || "") + '\n', 'jqconsole-output');
+        if (d.image) {
+          var plt = "data:image/png;charset=utf-8;base64," + d.image;
+          $("#current-plot").attr("src", plt);
+          $("#export-plot").attr("href", plt);
+          plots.push(plt);
+          $('a[href="#plots"]').tab("show");
+        }
+      }
+      if (d.error) {
+        jqconsole.Write(d.error + '\n', 'jqconsole-error');
+      }
+      getSessionVariables();
+    });
+  }
+
+  var startPrompt = function () {
+    // Start the prompt with history enabled.
+    jqconsole.Prompt(true, function (input) {
+      sendCommand(input);
+      // Restart the prompt.
+      startPrompt();
+    });
+  };
+  startPrompt();
+
+//this method will register event on close icon on the tab..
+function registerCloseEvent() {
+  $(".closeTab").click(function () {
+      //there are multiple elements which has .closeTab icon so close the tab whose close icon is clicked
+      var tabContentId = $(this).parent().attr("href");
+      $(this).parent().parent().remove(); //remove li of tab
+      $('#myTab a:last').tab('show'); // Select first tab
+      $(tabContentId).remove(); //remove respective tab content
+      var name = $("span", $(this).parent()).text();
+      $("#file-" + name.replace(".", "\\.")).removeClass("active");
+      $("#file-" + name.replace(".", "\\.")).addClass("openfile");
+  });
+}
+registerCloseEvent();
+
+
+$(".openfile").click(function(e) {
+  e.preventDefault();
+  if ($(this).hasClass("active")) {
+    return;
+  }
+  $(this).addClass("active");
+  var editor = addTab($(this).text());
+  $.get("/file/" + $(this).text(), function(d) {
+    editor.setValue(d);
+  });
+  return false;
+});
+
+$("#openfilewidget").click(function(e) {
+  $('#upload_file').trigger('click');
+  return false;
+});
+
+$("#data-upload").click(function(e) {
+  $("#upload_data").trigger('click');
+  return false;
+});
+
+$("#upload_data").change(function(e){
+  $.ajax({
+    url: "/upload",
+    type: 'POST',
+    data: new FormData($("#upload_form")),
+    success: function(data) {
+      console.log(data);
+    }
+  });
+});
+
+// TODO: this doesn't work :(
+$("#upload_file").change(function(e){
+  var filename = $(this).val().slice(12);
+  var input = document.getElementById('upload_file')
+  var reader = new FileReader();
+  reader.readAsText(input.files[0], "UTF-8");
+  reader.onload = function (evt) {
+    var editor = addTab(filename)
+    editor.setValue(evt.target.result);
+  }
+});
+
+function saveEditor(id, saveas) {
+  var editor = ace.edit(id);
+  var filename = $("." + id + "-tab .name").text();
+  if (/Untitled/.test(filename) || saveas==true) {
+    filename = prompt("Save as: ");
+    $("." + id + "-tab .name").text(filename);
+  }
+  $.post("/file", { source: editor.getSession().getValue(), filename: filename }, function(d) {
+    console.log(d);
+    $("." + id + "-tab").append('<span style="color: green;" class="saved glyphicon glyphicon-floppy-saved" aria-hidden="true"></span>');
+    setTimeout(function() {
+      $(".saved").remove();
+    }, 500);
+  });
+}
+
+$("#run-btn").click(function(e) {
+    e.preventDefault();
+    var id = $("#editors .active .editor").attr("id");
+    var editor = ace.edit(id);
+    var text = editor.getCopyText();
+    if (text=="") {
+      text =  editor.getSession().getValue();
+    }
+    // jqconsole.SetPromptText(text);
+    jqconsole.Write(">>> " + text + '\n', 'jqconsole-input');
+    sendCommand(text);
+  return false;
+});
+
+$("#reset-btn").click(function(e) {
+    e.preventDefault();
+    if (confirm("Are you sure you want to reset your session?")) {
+      sendCommand("%reset -f");
+    }
+  return false;
+});
+
+$("#knit-btn").click(function(e) {
+  e.preventDefault();
+  var id = $("#editors .active .editor").attr("id");
+  var editor = ace.edit(id);
+  var markdown = editor.getSession().getValue();
+  $.post("/md", { markdown: markdown }, function(html) {
+    html = '<article class="markdown-body" style="padding: 70px;">' + html + "</article>";
+    html = '<html><head><link href="/static/css/github-markdown.css" rel="stylesheet"></head><body>' + html + "</body></html>";
+    var win = window.open('','Rodeo | Markdown');
+    win.document.write(html);
+  });
+  return false;
+});
+
+$("#prev-plot").click(function(e) {
+  e.preventDefault();
+  var plt = $("#current-plot").attr("src");
+  var idx = plots.indexOf(plt);
+  if (idx > 0) {
+    $("#current-plot").attr("src", plots[idx-1]);
+  }
+  return false;
+});
+
+$("#next-plot").click(function(e) {
+  e.preventDefault();
+  var plt = $("#current-plot").attr("src");
+  var idx = plots.indexOf(plt);
+  if (idx > -1 && idx < (plots.length-1)) {
+    $("#current-plot").attr("src", plots[idx+1]);
+  }
+  return false;
+});
+
+$("#trash-plot").click(function(e) {
+  e.preventDefault();
+  var plt = $("#current-plot").attr("src");
+  var idx = plots.indexOf(plt);
+  if (idx > 0) {
+    $("#current-plot").attr("src", plots[idx-1]);
+  } else {
+    $("#current-plot").attr("src", "");
+  }
+  if (idx > -1) {
+    plots.splice(idx, 1);
+  }
+
+  return false;
+});
+
+$("#prefs").submit(function(e) {
+  e.preventDefault();
+  $("#prefsModal").modal("hide");
+  $.ajax({
+    url: "/rc",
+    type: 'POST',
+    data: $(this).serialize(),
+    success: function(data) {
+      // do nothing
+    }
+  });
+  return false;
+});
+
+function zoomImage() {
+  var currentPlot = document.getElementById('current-plot');
+  var url = currentPlot.getAttribute('src');
+  window.open(url,'Image','width=currentPlot.stylewidth,height=currentPlot.style.height,resizable=1');
+}
+
+$(document).keydown(function (e) {
+  if (event.ctrlKey == true) {
+    if (e.which=='49') {
+      // focus on editor
+      var id = $("#editors .active .editor").attr("id");
+      var editor = ace.edit(id);
+      editor.focus();
+    } else if (e.which=='50') {
+      // focus on console
+      jqconsole.Focus();
+    }
+  }
+});
+
+</script>
+</body>
+</html>
